@@ -117,6 +117,11 @@ def test_net(net, image, text_threshold, link_threshold, low_text, cuda, poly, r
 
     return boxes, polys, ret_score_text
 
+# convert bounding shape to bounding box
+def bounding_box(points):
+    points = points.astype(np.int16)
+    x_coordinates, y_coordinates = zip(*points)
+    return [(min(x_coordinates), min(y_coordinates)), (max(x_coordinates), max(y_coordinates))]
 
 
 if __name__ == '__main__':
@@ -161,11 +166,19 @@ if __name__ == '__main__':
 
         bboxes, polys, score_text = test_net(net, image, args.text_threshold, args.link_threshold, args.low_text, args.cuda, args.poly, refine_net)
 
-        # save score text
+        # # save score text
         filename, file_ext = os.path.splitext(os.path.basename(image_path))
-        mask_file = result_folder + "/res_" + filename + '_mask.jpg'
-        cv2.imwrite(mask_file, score_text)
+        # mask_file = result_folder + "/res_" + filename + '_mask.jpg'
+        # cv2.imwrite(mask_file, score_text)
 
-        file_utils.saveResult(image_path, image[:,:,::-1], polys, dirname=result_folder)
+        # file_utils.saveResult(image_path, image[:,:,::-1], polys, dirname=result_folder)
+        # Save cropped bounding boxes
+        for i, bbs in enumerate(bboxes):
+            crop = bounding_box(bbs)
+            cropped = image[crop[0][1]:crop[1][1],crop[0][0]:crop[1][0]]
+            try:
+                cv2.imwrite(result_folder + '/res_' + filename + '_cropped_' + str(i) + '.png', cropped)
+            except:
+                continue
 
     print("elapsed time : {}s".format(time.time() - t))
